@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import matplotlib
+import os
+import sys
 from collections import Counter
 import matplotlib.pyplot as plt
 
@@ -83,6 +86,25 @@ X_test = preprocess_data(test_data, reference_columns=features.columns).values
 predictions = knn.predict(X_test)
 print(predictions)
 
+def is_running_in_colab():
+    try:
+        import google.colab
+        return True
+    except ImportError:
+        return False
+
+if is_running_in_colab():
+    matplotlib.use('module://matplotlib_inline.backend_inline')
+else:
+    if os.environ.get('DISPLAY') is None and sys.platform != 'win32':
+        matplotlib.use('Agg')  
+    else:
+        try:
+            import PyQt5
+            matplotlib.use('Qt5Agg')  
+        except ImportError:
+            matplotlib.use('TkAgg')  )
+
 drink_preference_count = df['Какой напиток Вы предпочитаете утром?'].value_counts()
 
 plt.figure(figsize=(10, 6))
@@ -90,16 +112,28 @@ plt.bar(drink_preference_count.index, drink_preference_count.values, alpha=0.7)
 plt.xlabel('Напиток (0 - Чай, 1 - Кофе)')
 plt.ylabel('Частота')
 plt.title('Частота выбора напитка утром')
-plt.show()
+
+if matplotlib.get_backend() == 'Agg':
+    plt.savefig('output_drink_preference.png')
+else:
+    plt.show()
+
+plt.close()  
 
 factor_columns = df.columns.drop('Какой напиток Вы предпочитаете утром?')
 
 for column in factor_columns:
-    if df[column].nunique() <= 10: 
+    if df[column].nunique() <= 10:  
         factor_preference = df.groupby([column, 'Какой напиток Вы предпочитаете утром?']).size().unstack()
         factor_preference.plot(kind='bar', stacked=True, figsize=(10, 6))
         plt.title(f'Влияние "{column}" на выбор напитка')
         plt.xlabel(column)
         plt.ylabel('Количество')
         plt.legend(title='Напиток', labels=['Чай', 'Кофе'])
-        plt.show()
+        
+        if matplotlib.get_backend() == 'Agg':
+            plt.savefig(f'output_{column}.png')
+        else:
+            plt.show()
+        
+        plt.close()  
